@@ -1,3 +1,7 @@
+/**
+ * This file belongs to CERN.
+ */
+
 #include "querydns.h"
 
 using namespace std; // NOLINT
@@ -16,19 +20,23 @@ bool QueryDns(const char *name,
   string string_tmp;
 
   res_init();
+  
+  // Set the nameserver and the port.
   _res.nsaddr_list[0].sin_addr.s_addr = inet_addr(dns_server);
   _res.nsaddr_list[0].sin_port = port;
+
   len = res_query(name, C_IN, ecord_type, answer, ans_len);
   if (len < 0)
   {
     herror("res_query");
-    return -1;
+    return false;
   }
+
   len = ns_initparse(answer, len, &ns);
   ns_parserr(&ns, ns_s_an, len, &rr);
-  string1 = string_tmp.assign(inet_ntoa(*((struct in_addr *)rr.rdata)));
+  string_tmp = string_tmp.assign(inet_ntoa(*((struct in_addr *)rr.rdata)));
   *result = string_tmp;
-  return 0;
+  return true;
 }
 
 int main(int argc,char* argv[])

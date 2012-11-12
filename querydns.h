@@ -1,3 +1,7 @@
+/**
+ * This file belongs to CERN.
+ */
+
 #ifndef QUERYDNS_H_
 #define QUERYDNS_H_
 
