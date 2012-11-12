@@ -23,7 +23,7 @@ bool QueryDns(const char *name,
   string string_tmp;
 
   len = res_init();
-  if (len < 0)
+  if (len != 0)
   {
     cout << "Initial Failed." << endl;
     return false;
