@@ -1,5 +1,8 @@
 /**
  * This file belongs to CERN.
+ *
+ * This is a function that resolves the hostname by specific nameserver.
+ *
  */
 
 #include "querydns.h"
@@ -19,7 +22,12 @@ bool QueryDns(const char *name,
   ns_rr rr;
   string string_tmp;
 
-  res_init();
+  len = res_init();
+  if (len < 0)
+  {
+    cout << "Initial Failed." << endl;
+    return false;
+  }
   
   // Set the nameserver and the port.
   _res.nsaddr_list[0].sin_addr.s_addr = inet_addr(dns_server);
