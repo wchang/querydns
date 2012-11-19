@@ -5,11 +5,15 @@
 #ifndef QUERYDNS_H_
 #define QUERYDNS_H_
 
-#include <netinet/in.h>
-#include <arpa/nameser.h>
+#include <ares.h>
+#include <stdlib.h>
+#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <sys/types.h>
-#include <resolv.h>
+#include <netinet/in.h>
 #include <netdb.h>
+#include <stdarg.h>
+#include <string.h>
+#include <ctype.h>
+#include <unistd.h>
 #include <iostream>
 #endif

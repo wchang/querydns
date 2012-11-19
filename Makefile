@@ -1,7 +1,7 @@
 All: main
 CC = g++
 CFLAGS = -O -Wall
-LIBS = -lresolv 
+LIBS = -lcares
 
 main : querydns.o
 	$(CC) -o qdns.exe querydns.o $(LIBS)
