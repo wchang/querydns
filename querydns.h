@@ -6,6 +6,7 @@
 #define QUERYDNS_H_
 
 #include <ares.h>
+#include <arpa/nameser.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -15,5 +16,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>
+#include <string.h>
 #include <iostream>
 #endif

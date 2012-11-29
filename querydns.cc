@@ -1,22 +1,24 @@
 /**
  *
- * This is a function that resolves the hostname which is given by users.
+ * This is a function that resolves the TXT result of the given hostname.
  * This function uses c-ares package
  *
  */
 
 #include "querydns.h"
 
-// Global variable for passing ip address
-static char ip[INET6_ADDRSTRLEN];
+// Global variables for getting the results of cname and txt.
+static char *cname;
+unsigned char *result_txt;
 
 using namespace std; // NOLINT
 
-static void run_ares_resolve(ares_channel channel)
+static void run_ares_mainloop(ares_channel channel)
 { 
   int nfds, count;
   fd_set readers, writers;
   struct timeval tv, *tvp;
+
   while (1)
   {
     FD_ZERO(&readers);
@@ -24,38 +26,60 @@ static void run_ares_resolve(ares_channel channel)
     nfds = ares_fds(channel, &readers, &writers);
     if (nfds == 0)
        break;
+
     tvp = ares_timeout(channel, NULL, &tv);
     count = select(nfds, &readers, &writers, NULL, tvp);
+
     ares_process(channel, &readers, &writers);
   }
 }
 
-static void callback(void *arg, int status, int timeouts, struct hostent *host)
+static void callback_txt(void *arg, int status,int timeouts,
+                         unsigned char *abuf, int alen)
 {
-    if (!host || status != ARES_SUCCESS)
-    {
-        cout << "Lookup Fail :" <<endl;
-        cout << ares_strerror(status)<<endl;
-        return;
-    }
-  
-//    for (int ii = 0; host->h_addr_list[ii]; ++ii) 
-    inet_ntop(host->h_addrtype, host->h_addr_list[0], ip, sizeof(ip));    
+   struct ares_txt_reply *get_txt_result=NULL;
+
+   status = ares_parse_txt_reply(abuf, alen, &get_txt_result);
+   if (status != ARES_SUCCESS)
+   {
+     cout << ares_strerror(status)<<endl;
+     return;
+   }
+
+   result_txt = get_txt_result->txt;
 }
 
-bool QueryDns(const char *name, int type, const char *dns_server,
+
+static void callback_cname(void *arg, int status,int timeouts,
+                           unsigned char *abuf, int alen)
+{
+   struct hostent *host=NULL;
+   
+   status = ares_parse_a_reply(abuf, alen, &host,NULL,NULL);
+   if (status != ARES_SUCCESS)
+   { 
+     cout << ares_strerror(status)<<endl;
+     return;
+   }
+  
+   cname = host->h_name;
+}
+
+bool QueryDns(const char *hostname, int type, const char *dns_server,
               const uint16_t port, string *result)
 {
-  ares_channel channel;
   int status;
-  struct ares_options options;
   int optmask = 0;
   string string_buff;
+  ares_channel channel;
+  struct ares_options options;
+  struct ares_addr_node *set_nameserver;
+
+  set_nameserver = new ares_addr_node[sizeof(ares_addr_node)];
 
   status = ares_library_init(ARES_LIB_INIT_ALL);
   if (status != ARES_SUCCESS)
   {
-        cout << "Ares Library_Init Fail :" <<endl;
         cout << ares_strerror(status);
         return 1;
   }
@@ -63,19 +87,40 @@ bool QueryDns(const char *name, int type, const char *dns_server,
   status = ares_init_options(&channel, &options, optmask); 
   if (status != ARES_SUCCESS)
   {
-        cout << "Ares Init_Options Fail :" << endl;
+        cout << ares_strerror(status);
+        return 1;
+  }
+ 
+  // Set up the name server we'd like to query.
+  if (strcmp(dns_server,"AF_INET"))
+     inet_pton(type, dns_server, &set_nameserver->addr.addr4);
+  else if (strcmp(dns_server, "AF_INET6"))
+     inet_pton(type, dns_server, &set_nameserver->addr.addr6);
+  else
+     return false;
+
+  set_nameserver[0].family = type;
+  set_nameserver[0].next = NULL;
+  status = ares_set_servers(channel, set_nameserver);
+  if (status != ARES_SUCCESS)
+  {
         cout << ares_strerror(status);
         return 1;
   }
 
-  ares_gethostbyname(channel, name, type, callback, NULL);
+  // Query the CNAME for the given hostname.
+  ares_query(channel, hostname,C_IN, T_CNAME, callback_cname, NULL);
+  run_ares_mainloop(channel);
 
-  run_ares_resolve(channel);
-
-  // Get the IP address and change the output type. 
-  string_buff = string_buff.assign(ip);
+  // After get the cname, query the txt result.
+  ares_query(channel, cname,C_IN, T_TXT, callback_txt, NULL);
+  run_ares_mainloop(channel);
+   
+  // Change the result type and then return it.
+  string_buff = string_buff.assign((const char*)result_txt);
   *result = string_buff;
 
+  delete set_nameserver;
   ares_destroy(channel);
   ares_library_cleanup();
 
@@ -85,7 +130,7 @@ bool QueryDns(const char *name, int type, const char *dns_server,
 int main(int argc,char* argv[])
 {
   string my_string;
-  QueryDns("www.cern.ch", AF_INET,"137.138.16.5", 53, &my_string);
-  cout << "The IP address is :"<< my_string << endl;
+  QueryDns("httpproxy.geo.cdn.cernvm.org", AF_INET,"137.138.234.60", 53, &my_string);
+  cout <<"Txt Result :"<< my_string << endl;
   return 0;
 }
