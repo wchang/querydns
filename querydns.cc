@@ -81,14 +81,14 @@ bool QueryDns(const char *hostname, int type, const char *dns_server,
   if (status != ARES_SUCCESS)
   {
         cout << ares_strerror(status);
-        return 1;
+        return false;
   }
   
   status = ares_init_options(&channel, &options, optmask); 
   if (status != ARES_SUCCESS)
   {
         cout << ares_strerror(status);
-        return 1;
+        return false;
   }
  
   // Set up the name server we'd like to query.
@@ -105,7 +105,7 @@ bool QueryDns(const char *hostname, int type, const char *dns_server,
   if (status != ARES_SUCCESS)
   {
         cout << ares_strerror(status);
-        return 1;
+        return false;
   }
 
   // Query the CNAME for the given hostname.
