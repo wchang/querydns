@@ -83,7 +83,11 @@ bool QueryDns(const char *hostname, int type, const char *dns_server,
         cout << ares_strerror(status);
         return false;
   }
-  
+
+  // Set up the udc port.
+  options.udp_port = port;
+  optmask |= ARES_OPT_UDP_PORT;
+
   status = ares_init_options(&channel, &options, optmask); 
   if (status != ARES_SUCCESS)
   {
