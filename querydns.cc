@@ -65,7 +65,7 @@ static void callback_cname(void *arg, int status,int timeouts,
    cname = host->h_name;
 }
 
-bool QueryDns(const char *hostname, int type, const char *dns_server,
+bool QueryDns(string hostname, int type, const char *dns_server,
               const uint16_t port, string *result)
 {
   int status;
@@ -113,7 +113,7 @@ bool QueryDns(const char *hostname, int type, const char *dns_server,
   }
 
   // Query the CNAME for the given hostname.
-  ares_query(channel, hostname,C_IN, T_CNAME, callback_cname, NULL);
+  ares_query(channel, hostname.c_str(),C_IN, T_CNAME, callback_cname, NULL);
   run_ares_mainloop(channel);
 
   // After get the cname, query the txt result.
@@ -131,10 +131,13 @@ bool QueryDns(const char *hostname, int type, const char *dns_server,
   return true;
 }
 
+/*
 int main(int argc,char* argv[])
 {
   string my_string;
   QueryDns("httpproxy.geo.cdn.cernvm.org", AF_INET,"137.138.234.60", 53, &my_string);
   cout <<"Txt Result :"<< my_string << endl;
+
   return 0;
 }
+*/
