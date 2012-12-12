@@ -1,19 +1,22 @@
 #include "resolveparameters.h"
 
-struct ConfigValue {
+struct ConfigValue 
+{
   string value;
   string source;
 };
 
 using namespace std;
-bool resolveparameters()
+bool ResolveParameters()
 {
-  string flag;
-  string cvmfs_conf_val;
-  string res_hostname;
-  string my_string;
-  char *shell;
-  flag="@";
+  bool retval;
+  string flag = "@";
+  string res_result;
+  string res_host;
+
+  int type =  AF_INET;
+  const uint16_t port = 53;
+  const char *ns_server="137.138.234.60";
 
   map<string,ConfigValue> *cvmfs_conf = NULL;
   cvmfs_conf = new map<string, ConfigValue>();
@@ -30,26 +33,26 @@ bool resolveparameters()
   for (map<string, ConfigValue>::iterator iter = cvmfs_conf->begin(),
        iEnd = cvmfs_conf->end(); iter != iEnd; ++iter)
   {
-    cvmfs_conf_val = iter->second.value;
-    if( cvmfs_conf_val.find_first_of(flag) == 0 )
+    string conf_val = iter->second.value;
+    if( conf_val.find_first_of(flag) == 0 )
     {  
-       res_hostname = res_hostname.assign(cvmfs_conf_val,1,cvmfs_conf_val.length()-1);
-       QueryDns(res_hostname, AF_INET,"137.138.234.60", 53, &my_string);       
-       iter->second.value = my_string;
-       setenv(iter->first.c_str(),my_string.c_str(),1);
+       res_host = res_host.assign(conf_val,1,conf_val.length()-1);
+       retval = QueryDns(res_host, type,ns_server, port, &res_result);       
+       assert(retval);
+       iter->second.value = res_result;
+       setenv(iter->first.c_str(),res_result.c_str(),1);
     }
   }
  
-  shell = getenv("CVMFS_HTTP_PROXY");
-  cout <<"ENV CVMFS_HTTP_PROXY :"<< shell << endl; 
-  shell = getenv("CVMFS_HTTP_PROXY2");
-  cout <<"ENV CVMFS_HTTP_PROXY2 :"<< shell << endl;
+  for (map<string, ConfigValue>::iterator iter = cvmfs_conf->begin(),
+       iEnd = cvmfs_conf->end(); iter != iEnd; ++iter)  
+     cout << "Key:"<<iter->first<<" "<<"Value:"<<iter->second.value<<endl;  
 
   return true;
 }
 
 int main(int argc,char* argv[])
 {
-  resolveparameters();
+  ResolveParameters();
   return 0;
 }

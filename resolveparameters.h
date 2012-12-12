@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <map>
 #include <string.h>
+#include <assert.h>
 #include <iostream>
 using namespace std;
 bool QueryDns(string, int, const char*,const uint16_t, string*);
