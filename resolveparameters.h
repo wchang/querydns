@@ -11,5 +11,5 @@
 #include <assert.h>
 #include <iostream>
 using namespace std;
-bool QueryDns(string, int, const char*,const uint16_t, string*);
+bool QueryDns(string, int, const string*,const uint16_t, string*);
 #endif
