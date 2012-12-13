@@ -7,11 +7,11 @@
 
 #include "querydns.h"
 
-// Global variables for getting the results of cname and txt.
-static char *cname;
-unsigned char *result_txt;
-
 using namespace std; // NOLINT
+
+// Global variables for getting the results of cname and txt.
+static string cname;
+unsigned char *result_txt;
 
 static void run_ares_mainloop(ares_channel channel)
 { 
@@ -43,6 +43,7 @@ static void callback_txt(void *arg, int status,int timeouts,
    if (status != ARES_SUCCESS)
    {
      cout << ares_strerror(status)<<endl;
+     result_txt = NULL;
      return;
    }
 
@@ -59,13 +60,14 @@ static void callback_cname(void *arg, int status,int timeouts,
    if (status != ARES_SUCCESS)
    { 
      cout << ares_strerror(status)<<endl;
+     cname = "";
      return;
    }
   
    cname = host->h_name;
 }
 
-bool QueryDns(string hostname, int type, const char *dns_server,
+bool QueryDns(string hostname, int type, const string *dns_server,
               const uint16_t port, string *result)
 {
   int status;
@@ -80,8 +82,8 @@ bool QueryDns(string hostname, int type, const char *dns_server,
   status = ares_library_init(ARES_LIB_INIT_ALL);
   if (status != ARES_SUCCESS)
   {
-        cout << ares_strerror(status);
-        return false;
+     cout << ares_strerror(status);
+     return false;
   }
 
   // Set up the udc port.
@@ -91,15 +93,15 @@ bool QueryDns(string hostname, int type, const char *dns_server,
   status = ares_init_options(&channel, &options, optmask); 
   if (status != ARES_SUCCESS)
   {
-        cout << ares_strerror(status);
-        return false;
+     cout << ares_strerror(status);
+     return false;
   }
- 
+
   // Set up the name server we'd like to query.
-  if (strcmp(dns_server,"AF_INET"))
-     inet_pton(type, dns_server, &set_nameserver->addr.addr4);
-  else if (strcmp(dns_server, "AF_INET6"))
-     inet_pton(type, dns_server, &set_nameserver->addr.addr6);
+  if ( type == AF_INET)
+     inet_pton(type, (*dns_server).c_str(), &set_nameserver->addr.addr4);
+  else if ( type == AF_INET6)
+     inet_pton(type, (*dns_server).c_str(), &set_nameserver->addr.addr6);
   else
      return false;
 
@@ -108,18 +110,23 @@ bool QueryDns(string hostname, int type, const char *dns_server,
   status = ares_set_servers(channel, set_nameserver);
   if (status != ARES_SUCCESS)
   {
-        cout << ares_strerror(status);
-        return false;
+     cout << ares_strerror(status);
+     return false;
   }
 
   // Query the CNAME for the given hostname.
   ares_query(channel, hostname.c_str(),C_IN, T_CNAME, callback_cname, NULL);
   run_ares_mainloop(channel);
-
-  // After get the cname, query the txt result.
-  ares_query(channel, cname,C_IN, T_TXT, callback_txt, NULL);
-  run_ares_mainloop(channel);
    
+  // After get the cname, query the txt result.
+  if (cname != "")
+  {
+     ares_query(channel, cname.c_str(),C_IN, T_TXT, callback_txt, NULL);
+     run_ares_mainloop(channel);
+  }
+  else
+     return false;
+
   // Change the result type and then return it.
   string_buff = string_buff.assign((const char*)result_txt);
   *result = string_buff;
