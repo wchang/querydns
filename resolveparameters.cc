@@ -16,7 +16,7 @@ bool ResolveParameters()
 
   int type =  AF_INET;
   const uint16_t port = 53;
-  const char *ns_server="137.138.234.60";
+  const string ns_server="137.138.234.60";
 
   map<string,ConfigValue> *cvmfs_conf = NULL;
   cvmfs_conf = new map<string, ConfigValue>();
@@ -37,9 +37,12 @@ bool ResolveParameters()
     if( conf_val.find_first_of(flag) == 0 )
     {  
        res_host = res_host.assign(conf_val,1,conf_val.length()-1);
-       retval = QueryDns(res_host, type,ns_server, port, &res_result);       
-       assert(retval);
-       iter->second.value = res_result;
+       retval = QueryDns(res_host, type, &ns_server, port, &res_result);       
+       if (retval == 1)
+          iter->second.value = res_result;
+       else 
+          iter->second.value = "";
+
        setenv(iter->first.c_str(),res_result.c_str(),1);
     }
   }
